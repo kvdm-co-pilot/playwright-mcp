@@ -45,6 +45,7 @@ Welcome to the Playwright MCP documentation! This index will help you find the r
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System design, components, data flow | All developers | ~800 lines |
 | [EXECUTION_PLAN.md](EXECUTION_PLAN.md) | Development roadmap and workflows | All developers | ~600 lines |
 | [BEST_PRACTICES.md](BEST_PRACTICES.md) | Coding standards and patterns | All developers | ~500 lines |
+| [MOBILE_INTEGRATION.md](MOBILE_INTEGRATION.md) | Mobile device emulation and testing | All developers | ~550 lines |
 | [DOC_INDEX.md](DOC_INDEX.md) | This file - documentation navigation | All | Short |
 
 ## 🗺️ Document Relationships
@@ -127,6 +128,13 @@ Welcome to the Playwright MCP documentation! This index will help you find the r
 - Capability system → [ARCHITECTURE.md](ARCHITECTURE.md#capabilities-system)
 - Adding capabilities → [EXECUTION_PLAN.md](EXECUTION_PLAN.md#extending-capabilities)
 
+#### Mobile Testing
+- Device emulation → [MOBILE_INTEGRATION.md](MOBILE_INTEGRATION.md#device-emulation)
+- Touch interactions → [MOBILE_INTEGRATION.md](MOBILE_INTEGRATION.md#touch-event-handling)
+- Geolocation → [MOBILE_INTEGRATION.md](MOBILE_INTEGRATION.md#geolocation)
+- Mobile workflows → [MOBILE_INTEGRATION.md](MOBILE_INTEGRATION.md#mobile-specific-workflows)
+- Best practices → [MOBILE_INTEGRATION.md](MOBILE_INTEGRATION.md#mobile-testing-best-practices)
+
 #### Contributing
 - Contribution guide → [CONTRIBUTING.md](CONTRIBUTING.md)
 - Commit format → [BEST_PRACTICES.md](BEST_PRACTICES.md#semantic-commit-messages)
@@ -158,8 +166,8 @@ Welcome to the Playwright MCP documentation! This index will help you find the r
 | Category | Documents | Total Lines | Words |
 |----------|-----------|-------------|-------|
 | User Docs | 2 | ~1,150 | ~8,500 |
-| Dev Docs | 4 | ~2,250 | ~18,000 |
-| **Total** | **6** | **~3,400** | **~26,500** |
+| Dev Docs | 5 | ~2,800 | ~23,000 |
+| **Total** | **7** | **~3,950** | **~31,500** |
 
 ## 🔄 Documentation Maintenance
 
@@ -210,6 +218,13 @@ Always run `npm run update-readme` before committing README changes.
 2. Check [ARCHITECTURE.md - Security](ARCHITECTURE.md#security-architecture)
 3. Consider [ARCHITECTURE.md - Deployment Patterns](ARCHITECTURE.md#deployment-patterns)
 4. Read [BEST_PRACTICES.md - Security](BEST_PRACTICES.md#security-best-practices)
+
+### "I want to test on mobile devices"
+1. Start with [MOBILE_INTEGRATION.md - Overview](MOBILE_INTEGRATION.md#overview)
+2. Choose device: [MOBILE_INTEGRATION.md - Device Emulation](MOBILE_INTEGRATION.md#device-emulation)
+3. Configure: [MOBILE_INTEGRATION.md - Configuration](MOBILE_INTEGRATION.md#configuration)
+4. Test workflows: [MOBILE_INTEGRATION.md - Mobile Workflows](MOBILE_INTEGRATION.md#mobile-specific-workflows)
+5. Best practices: [MOBILE_INTEGRATION.md - Testing Best Practices](MOBILE_INTEGRATION.md#mobile-testing-best-practices)
 
 ## 📞 Getting Help
 
