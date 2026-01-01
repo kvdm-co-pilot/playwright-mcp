@@ -25,6 +25,18 @@ const DEFAULT_TIMEOUT = 30000;
 const POLL_INTERVAL = 200;
 
 /**
+ * Default timeout for waitForEnabled check
+ * Shorter than main timeout since element might be intentionally disabled
+ */
+const ENABLED_CHECK_TIMEOUT = 5000;
+
+/**
+ * Default UI stability wait time for animations
+ * This is internal - agents never see this
+ */
+const UI_STABILITY_TIMEOUT = 500;
+
+/**
  * Translate Playwright selector to Android/Appium selector
  *
  * Resolution order (matching Playwright patterns):
@@ -135,7 +147,7 @@ async function waitForElement(driver, selector, options = {}) {
     // Also wait for enabled (clickable) for interactive elements
     if (state === 'visible') {
       try {
-        await element.waitForEnabled({ timeout: Math.min(timeout, 5000) });
+        await element.waitForEnabled({ timeout: Math.min(timeout, ENABLED_CHECK_TIMEOUT) });
       } catch (e) {
         // Element might be visible but disabled - that's ok for some use cases
       }
@@ -156,10 +168,15 @@ async function waitForElement(driver, selector, options = {}) {
  * This handles mobile-specific UI animations and transitions
  * Called automatically after actions - never exposed to agents
  *
+ * NOTE: This uses a short fixed pause intentionally. Mobile UIs often have
+ * animations that complete after the element state changes. This is different
+ * from element waits which use polling. The pause is kept short (500ms default)
+ * and is used only after actions complete, not for element waiting.
+ *
  * @param {Object} driver - WebdriverIO driver instance
- * @param {number} stabilityTimeout - How long to wait for stability (default: 500ms)
+ * @param {number} stabilityTimeout - How long to wait for stability (default: UI_STABILITY_TIMEOUT)
  */
-async function waitForUIStability(driver, stabilityTimeout = 500) {
+async function waitForUIStability(driver, stabilityTimeout = UI_STABILITY_TIMEOUT) {
   // Short wait for UI animations to complete
   // This is internal - agents never see this
   await driver.pause(stabilityTimeout);

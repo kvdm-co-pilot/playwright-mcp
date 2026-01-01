@@ -52,7 +52,19 @@ function extractMethodFromSchema(schema) {
 
 /**
  * Inject Android tools support into the MCP server
- * This patches the Playwright bundled MCP Server class
+ *
+ * IMPORTANT: This patches the Playwright bundled MCP Server class.
+ * This approach is necessary because Playwright bundles its own copy of the
+ * MCP SDK, which means we cannot patch the npm @modelcontextprotocol/sdk module.
+ *
+ * RISK: This patching approach may break with future Playwright updates if:
+ * - The bundled module path changes
+ * - The Server class API changes
+ * - The setRequestHandler method signature changes
+ *
+ * MITIGATION: If patching fails, the server will continue to work with web
+ * tools only. Android tools will be unavailable but web automation remains
+ * fully functional.
  */
 function injectAndroidTools() {
   if (_injected) {
@@ -61,12 +73,15 @@ function injectAndroidTools() {
 
   try {
     // IMPORTANT: Patch the Playwright BUNDLED MCP module, not the npm module
-    // Playwright bundles its own copy of the MCP SDK
+    // Playwright bundles its own copy of the MCP SDK at this path
+    // This path may change in future Playwright versions
     const mcpBundle = require('playwright-core/lib/mcpBundle');
     const Server = mcpBundle.Server;
 
     if (!Server) {
-      console.error('Warning: Could not find Server class in mcpBundle');
+      // Server class not found - Playwright API may have changed
+      console.error('[android-wrapper] Warning: Could not find Server class in mcpBundle. Android tools will not be available.');
+      console.error('[android-wrapper] This may be due to a Playwright version incompatibility.');
       return;
     }
 
@@ -140,8 +155,11 @@ function injectAndroidTools() {
       console.error('[android-wrapper] Successfully injected Android tools support');
     }
   } catch (error) {
-    // If injection fails, continue without Android tools
-    console.error('Warning: Failed to inject Android tools:', error.message);
+    // If injection fails, the server will continue working with web tools only
+    // Android tools will not be available, but this is not a fatal error
+    console.error('[android-wrapper] Warning: Failed to inject Android tools:', error.message);
+    console.error('[android-wrapper] Web automation will continue to work. Android tools will not be available.');
+    console.error('[android-wrapper] This may be due to a Playwright version incompatibility.');
   }
 }
 

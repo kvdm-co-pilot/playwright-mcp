@@ -234,6 +234,8 @@ test.describe('Android Tools', () => {
 
 // Unit tests for selector translation function
 test.describe('Selector Translation Unit Tests', () => {
+  // Using require here because utils.js is a CommonJS module
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { translateSelector } = require('../src/tools/android/utils');
 
   test('translates ID selector to accessibility ID', () => {
