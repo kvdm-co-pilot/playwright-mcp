@@ -46,6 +46,7 @@ Welcome to the Playwright MCP documentation! This index will help you find the r
 | [EXECUTION_PLAN.md](EXECUTION_PLAN.md) | Development roadmap and workflows | All developers | ~600 lines |
 | [BEST_PRACTICES.md](BEST_PRACTICES.md) | Coding standards and patterns | All developers | ~500 lines |
 | [MOBILE_INTEGRATION.md](MOBILE_INTEGRATION.md) | Mobile device emulation and testing | All developers | ~550 lines |
+| [ANDROID_MOBILE_SUPPORT.md](ANDROID_MOBILE_SUPPORT.md) | Android automation implementation guide | Implementers | ~700 lines |
 | [DOC_INDEX.md](DOC_INDEX.md) | This file - documentation navigation | All | Short |
 
 ## 🗺️ Document Relationships
@@ -135,6 +136,13 @@ Welcome to the Playwright MCP documentation! This index will help you find the r
 - Mobile workflows → [MOBILE_INTEGRATION.md](MOBILE_INTEGRATION.md#mobile-specific-workflows)
 - Best practices → [MOBILE_INTEGRATION.md](MOBILE_INTEGRATION.md#mobile-testing-best-practices)
 
+#### Android Automation
+- Implementation guide → [ANDROID_MOBILE_SUPPORT.md](ANDROID_MOBILE_SUPPORT.md#context--mission)
+- Handler routing → [ANDROID_MOBILE_SUPPORT.md](ANDROID_MOBILE_SUPPORT.md#core-architecture-decision)
+- Four MVP tools → [ANDROID_MOBILE_SUPPORT.md](ANDROID_MOBILE_SUPPORT.md#implementation-requirements)
+- Code examples → [ANDROID_MOBILE_SUPPORT.md](ANDROID_MOBILE_SUPPORT.md#code-skeletons)
+- Success criteria → [ANDROID_MOBILE_SUPPORT.md](ANDROID_MOBILE_SUPPORT.md#success-criteria)
+
 #### Contributing
 - Contribution guide → [CONTRIBUTING.md](CONTRIBUTING.md)
 - Commit format → [BEST_PRACTICES.md](BEST_PRACTICES.md#semantic-commit-messages)
@@ -166,8 +174,8 @@ Welcome to the Playwright MCP documentation! This index will help you find the r
 | Category | Documents | Total Lines | Words |
 |----------|-----------|-------------|-------|
 | User Docs | 2 | ~1,150 | ~8,500 |
-| Dev Docs | 5 | ~2,800 | ~23,000 |
-| **Total** | **7** | **~3,950** | **~31,500** |
+| Dev Docs | 6 | ~3,500 | ~28,000 |
+| **Total** | **8** | **~4,650** | **~36,500** |
 
 ## 🔄 Documentation Maintenance
 
@@ -225,6 +233,13 @@ Always run `npm run update-readme` before committing README changes.
 3. Configure: [MOBILE_INTEGRATION.md - Configuration](MOBILE_INTEGRATION.md#configuration)
 4. Test workflows: [MOBILE_INTEGRATION.md - Mobile Workflows](MOBILE_INTEGRATION.md#mobile-specific-workflows)
 5. Best practices: [MOBILE_INTEGRATION.md - Testing Best Practices](MOBILE_INTEGRATION.md#mobile-testing-best-practices)
+
+### "I want to implement Android automation support"
+1. Read [ANDROID_MOBILE_SUPPORT.md - Context & Mission](ANDROID_MOBILE_SUPPORT.md#context--mission)
+2. Understand [Core Architecture Decision](ANDROID_MOBILE_SUPPORT.md#core-architecture-decision)
+3. Follow [Investigation Phase](ANDROID_MOBILE_SUPPORT.md#investigation-phase)
+4. Implement [Four MVP Tools](ANDROID_MOBILE_SUPPORT.md#phase-3-four-mvp-tools)
+5. Validate with [Success Criteria](ANDROID_MOBILE_SUPPORT.md#success-criteria)
 
 ## 📞 Getting Help
 

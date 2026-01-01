@@ -164,6 +164,29 @@ This document summarizes the comprehensive execution plan and architecture docum
 - ✅ Mobile-aware tool usage
 - ✅ Handler-level integration details
 
+### 7. ANDROID_MOBILE_SUPPORT.md (700 lines)
+**Purpose**: Android automation implementation guide for developers
+
+**Contents**:
+- Mission and core architecture decision (single handler for web + Android)
+- Investigation phase for understanding Playwright handler
+- Implementation requirements (4 phases: setup, routing, tools, docs)
+- Critical constraints (DO/DO NOT lists)
+- Handler routing architecture with target-based dispatch
+- Four MVP tools: launch_app, tap, input_text, screenshot
+- Selector translation (Playwright → Android accessibility IDs/XPath)
+- Automatic waits and error handling
+- Complete code skeletons for all tools
+- Validation steps and success criteria
+- Example usage showing target parameter
+
+**Key Architecture**:
+- ✅ Single handler routes based on `target` parameter
+- ✅ Backward compatible (web is default)
+- ✅ Transparent selector translation
+- ✅ Internal automatic waits (no exposed sleeps)
+- ✅ Clean separation: web vs Android tools
+
 ## 🏗️ Architecture Highlights
 
 ### System Layers Documented
@@ -237,12 +260,12 @@ This document summarizes the comprehensive execution plan and architecture docum
 
 | Metric | Value |
 |--------|-------|
-| **Total Documents** | 6 new + 3 existing |
-| **Total Lines** | ~4,650 lines |
-| **Total Words** | ~35,000 words |
-| **Code Examples** | 120+ examples |
+| **Total Documents** | 7 new + 3 existing |
+| **Total Lines** | ~5,350 lines |
+| **Total Words** | ~40,000 words |
+| **Code Examples** | 140+ examples |
 | **Diagrams** | 15+ ASCII diagrams |
-| **Topics Covered** | 60+ topics |
+| **Topics Covered** | 70+ topics |
 
 ### Coverage Areas
 - ✅ User documentation (README)
@@ -252,6 +275,7 @@ This document summarizes the comprehensive execution plan and architecture docum
 - ✅ Execution plan (EXECUTION_PLAN)
 - ✅ Best practices (BEST_PRACTICES)
 - ✅ Mobile integration (MOBILE_INTEGRATION)
+- ✅ Android automation (ANDROID_MOBILE_SUPPORT)
 - ✅ Navigation (DOC_INDEX)
 - ✅ Security (SECURITY)
 
