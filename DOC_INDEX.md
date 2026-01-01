@@ -47,6 +47,7 @@ Welcome to the Playwright MCP documentation! This index will help you find the r
 | [BEST_PRACTICES.md](BEST_PRACTICES.md) | Coding standards and patterns | All developers | ~500 lines |
 | [MOBILE_INTEGRATION.md](MOBILE_INTEGRATION.md) | Mobile device emulation and testing | All developers | ~550 lines |
 | [ANDROID_MOBILE_SUPPORT.md](ANDROID_MOBILE_SUPPORT.md) | Android automation implementation guide | Implementers | ~700 lines |
+| [AGENT_PROMPT_ANDROID_MVP.md](AGENT_PROMPT_ANDROID_MVP.md) | Step-by-step Android MVP implementation & testing guide | AI Agents, Implementers | ~1,000 lines |
 | [DOC_INDEX.md](DOC_INDEX.md) | This file - documentation navigation | All | Short |
 
 ## 🗺️ Document Relationships
@@ -142,6 +143,7 @@ Welcome to the Playwright MCP documentation! This index will help you find the r
 - Four MVP tools → [ANDROID_MOBILE_SUPPORT.md](ANDROID_MOBILE_SUPPORT.md#implementation-requirements)
 - Code examples → [ANDROID_MOBILE_SUPPORT.md](ANDROID_MOBILE_SUPPORT.md#code-skeletons)
 - Success criteria → [ANDROID_MOBILE_SUPPORT.md](ANDROID_MOBILE_SUPPORT.md#success-criteria)
+- **Agent MVP Guide** → [AGENT_PROMPT_ANDROID_MVP.md](AGENT_PROMPT_ANDROID_MVP.md) - Complete implementation & testing workflow
 
 #### Contributing
 - Contribution guide → [CONTRIBUTING.md](CONTRIBUTING.md)
@@ -174,8 +176,8 @@ Welcome to the Playwright MCP documentation! This index will help you find the r
 | Category | Documents | Total Lines | Words |
 |----------|-----------|-------------|-------|
 | User Docs | 2 | ~1,150 | ~8,500 |
-| Dev Docs | 6 | ~3,500 | ~28,000 |
-| **Total** | **8** | **~4,650** | **~36,500** |
+| Dev Docs | 7 | ~4,500 | ~35,000 |
+| **Total** | **9** | **~5,650** | **~43,500** |
 
 ## 🔄 Documentation Maintenance
 
@@ -240,6 +242,13 @@ Always run `npm run update-readme` before committing README changes.
 3. Follow [Investigation Phase](ANDROID_MOBILE_SUPPORT.md#investigation-phase)
 4. Implement [Four MVP Tools](ANDROID_MOBILE_SUPPORT.md#phase-3-four-mvp-tools)
 5. Validate with [Success Criteria](ANDROID_MOBILE_SUPPORT.md#success-criteria)
+
+### "I'm an AI agent implementing Android MVP"
+1. **START HERE**: [AGENT_PROMPT_ANDROID_MVP.md](AGENT_PROMPT_ANDROID_MVP.md) - Complete step-by-step guide
+2. Follow all 10 phases in order
+3. Implement AND test (testing is mandatory)
+4. Use provided code skeletons
+5. Validate with success criteria checklist
 
 ## 📞 Getting Help
 
