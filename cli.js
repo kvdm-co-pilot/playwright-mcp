@@ -15,10 +15,16 @@
  * limitations under the License.
  */
 
+// IMPORTANT: Inject Android tools BEFORE loading any Playwright modules
+// This patches the MCP Server class to add Android tool support
+const { injectAndroidTools } = require('./src/androidWrapper');
+injectAndroidTools();
+
 const { program } = require('playwright-core/lib/utilsBundle');
 const { decorateCommand } = require('playwright/lib/mcp/program');
 
 const packageJSON = require('./package.json');
 const p = program.version('Version ' + packageJSON.version).name('Playwright MCP');
-decorateCommand(p, packageJSON.version)
+
+decorateCommand(p, packageJSON.version);
 void program.parseAsync(process.argv);
