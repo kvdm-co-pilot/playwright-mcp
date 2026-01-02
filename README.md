@@ -755,12 +755,25 @@ http.createServer(async (req, res) => {
 
 Playwright MCP includes experimental support for Android mobile automation using Appium. This allows agents to automate Android apps using the same familiar Playwright selector syntax.
 
+> **📖 Full Setup Guide**: See [docs/ANDROID_SETUP_GUIDE.md](docs/ANDROID_SETUP_GUIDE.md) for complete instructions on setting up Android SDK, emulator, and Appium for local or CI testing.
+
 <details>
 <summary><b>Requirements</b></summary>
 
+- **Android SDK** with platform-tools and emulator
+- **Android emulator** (AVD) or real device connected
 - **Appium server** running locally (default: `http://localhost:4723`)
-- **Android emulator** or real device connected
+- **UiAutomator2 driver** installed in Appium
 - **App installed** on the device
+
+Quick verification:
+```bash
+# Check device connected
+adb devices
+
+# Check Appium running
+curl http://localhost:4723/status
+```
 
 </details>
 
