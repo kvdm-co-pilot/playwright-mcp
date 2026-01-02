@@ -41,6 +41,11 @@ test('test snapshot tool list', async ({ client }) => {
     'browser_tabs',
     'browser_take_screenshot',
     'browser_wait_for',
+    // Android tools
+    'android_launch_app',
+    'android_tap',
+    'android_input_text',
+    'android_screenshot',
   ]));
 });
 

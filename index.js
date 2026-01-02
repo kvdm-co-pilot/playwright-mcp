@@ -15,5 +15,65 @@
  * limitations under the License.
  */
 
-const { createConnection } = require('playwright/lib/mcp/index');
-module.exports = { createConnection };
+const { createConnection: createPlaywrightConnection } = require('playwright/lib/mcp/index');
+const { androidToolDefinitions, handleAndroidTool, isAndroidTool } = require('./src/tools/android');
+const { getAppiumDriver, closeAppiumDriver } = require('./src/appiumClient');
+
+/**
+ * Create an MCP connection with Android tool support
+ *
+ * @param {Object} config - Configuration options
+ * @param {Function} contextGetter - Optional function to get browser context
+ * @returns {Promise<Object>} MCP server instance with Android support
+ */
+async function createConnection(config, contextGetter) {
+  const server = await createPlaywrightConnection(config, contextGetter);
+
+  // Get the original handlers from the Map
+  const originalToolsListHandler = server._requestHandlers.get('tools/list');
+  const originalToolsCallHandler = server._requestHandlers.get('tools/call');
+
+  // Wrap the tools/list handler to include Android tools
+  if (originalToolsListHandler) {
+    server._requestHandlers.set('tools/list', async (request, extra) => {
+      const result = await originalToolsListHandler(request, extra);
+      // Add Android tools to the list
+      result.tools = [...result.tools, ...androidToolDefinitions];
+      return result;
+    });
+  }
+
+  // Wrap the tools/call handler to route Android tools
+  if (originalToolsCallHandler) {
+    server._requestHandlers.set('tools/call', async (request, extra) => {
+      const { name, arguments: args } = request.params;
+
+      // Check if this is an Android tool
+      if (isAndroidTool(name)) {
+        try {
+          return await handleAndroidTool(name, args || {});
+        } catch (error) {
+          return {
+            content: [{
+              type: 'text',
+              text: `Error: ${error.message}`,
+            }],
+            isError: true,
+          };
+        }
+      }
+
+      // Otherwise, delegate to original Playwright handler
+      return await originalToolsCallHandler(request, extra);
+    });
+  }
+
+  return server;
+}
+
+module.exports = {
+  createConnection,
+  // Export Android utilities for programmatic use
+  getAppiumDriver,
+  closeAppiumDriver,
+};

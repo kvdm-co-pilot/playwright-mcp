@@ -38,7 +38,11 @@
   },
   "dependencies": {
     "playwright": "1.58.0-alpha-2025-12-29",
-    "playwright-core": "1.58.0-alpha-2025-12-29"
+    "playwright-core": "1.58.0-alpha-2025-12-29",
+    "webdriverio": "^8.40.0"
+  },
+  "optionalDependencies": {
+    "appium": "^2.11.0"
   },
   "bin": {
     "mcp-server-playwright": "cli.js"
