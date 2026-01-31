@@ -1,0 +1,15 @@
+{
+  "inputs": [],
+  "servers": {
+    "playwright-android": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${workspaceFolder}/cli.js"],
+      "env": {
+        "APPIUM_URL": "http://localhost:4723",
+        "ANDROID_DEVICE": "emulator-5554",
+        "ANDROID_HOME": "${env:HOME}/Library/Android/sdk"
+      }
+    }
+  }
+}

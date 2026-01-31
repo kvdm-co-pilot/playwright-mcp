@@ -1,0 +1,26 @@
+{
+  // MCP Server Configuration for GitHub Copilot
+  // This enables Playwright MCP with Android support
+  
+  "github.copilot.chat.mcpServers": {
+    "playwright-android": {
+      "command": "node",
+      "args": ["${workspaceFolder}/cli.js"],
+      "env": {
+        "APPIUM_URL": "http://localhost:4723",
+        "ANDROID_DEVICE": "emulator-5554"
+      }
+    }
+  },
+
+  // Alternative: Use npx with published package
+  // "github.copilot.chat.mcpServers": {
+  //   "playwright-android": {
+  //     "command": "npx",
+  //     "args": ["-y", "@playwright/mcp-android"],
+  //     "env": {
+  //       "APPIUM_URL": "http://localhost:4723"
+  //     }
+  //   }
+  // }
+}
