@@ -39,10 +39,14 @@ async function android_tap(params) {
     const driver = await getAppiumDriver();
 
     if (x !== undefined && y !== undefined) {
-      // Tap at coordinates
-      await driver.touchAction([
-        { action: 'tap', x, y }
-      ]);
+      // Tap at coordinates using W3C Actions API
+      await driver.action('pointer', {
+        parameters: { pointerType: 'touch' }
+      })
+        .move({ x: Math.round(x), y: Math.round(y) })
+        .down()
+        .up()
+        .perform();
 
       // Wait for UI stability after action (internal, automatic)
       await waitForUIStability(driver);

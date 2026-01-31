@@ -78,13 +78,13 @@ async function getAppiumDriver() {
     protocol: 'http',
     hostname: new URL(appiumUrl).hostname,
     port: parseInt(new URL(appiumUrl).port) || 4723,
-    path: '/wd/hub',
+    path: '/',  // Appium 2.x uses '/' not '/wd/hub'
     capabilities: {
       platformName: 'Android',
       'appium:automationName': 'UiAutomator2',
       'appium:deviceName': process.env.ANDROID_DEVICE || 'Android Emulator',
-      'appium:avd': process.env.ANDROID_AVD,
       'appium:noReset': true,
+      'appium:newCommandTimeout': 300,
     },
     logLevel: 'error',
   };

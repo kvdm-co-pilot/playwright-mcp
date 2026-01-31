@@ -50,6 +50,8 @@
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.24.0",
     "@playwright/test": "1.58.0-alpha-2025-12-29",
-    "@types/node": "^24.3.0"
+    "@types/node": "^24.3.0",
+    "appium-uiautomator2-driver": "^6.7.15",
+    "uiautomator2": "^1.0.2"
   }
 }
