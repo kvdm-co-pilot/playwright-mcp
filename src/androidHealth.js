@@ -15,14 +15,8 @@
  */
 
 /**
- * Android Infrastructure Health Check & Auto-Start Module
- * 
- * Provides automatic infrastructure management:
- * 1. Service Discovery - Check if Appium server is reachable
- * 2. Device Discovery - Check if Android emulator/device is connected
- * 3. Auto-Start - Automatically start Appium and emulator if not running
- * 4. Status Reporting - Clear messages about what's happening
- * 5. Health Caching - Avoid excessive health checks
+ * Android infrastructure health checks and auto-start capabilities.
+ * Manages Appium server and emulator lifecycle automatically.
  */
 
 const { exec, spawn } = require('child_process');
@@ -32,42 +26,21 @@ const path = require('path');
 
 const execAsync = promisify(exec);
 
-// ============================================================================
-// Configuration
-// ============================================================================
-
 const CONFIG = {
-  // Timeouts
-  APPIUM_START_TIMEOUT_MS: 30000,      // Max time to wait for Appium to start
-  EMULATOR_START_TIMEOUT_MS: 120000,   // Max time to wait for emulator to boot
-  EMULATOR_BOOT_POLL_MS: 3000,         // How often to check if emulator is booted
-  HEALTH_CHECK_CACHE_MS: 5000,         // Cache health status for this long
-  
-  // Retry settings
-  MAX_APPIUM_START_ATTEMPTS: 3,
-  MAX_EMULATOR_START_ATTEMPTS: 2,
+  APPIUM_START_TIMEOUT_MS: 30000,
+  EMULATOR_START_TIMEOUT_MS: 120000,
+  EMULATOR_BOOT_POLL_MS: 3000,
+  HEALTH_CHECK_CACHE_MS: 5000,
 };
-
-// ============================================================================
-// State
-// ============================================================================
 
 let lastHealthCheck = null;
 let lastHealthCheckTime = 0;
-let statusCallback = null; // For reporting status back to caller
+let statusCallback = null;
 
-/**
- * Set a callback to receive status updates during operations
- * @param {function(string): void} callback 
- */
 function setStatusCallback(callback) {
   statusCallback = callback;
 }
 
-/**
- * Report status to callback and console
- * @param {string} message 
- */
 function reportStatus(message) {
   const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
   const formatted = `[${timestamp}] ${message}`;
@@ -76,10 +49,6 @@ function reportStatus(message) {
     statusCallback(message);
   }
 }
-
-// ============================================================================
-// Path Discovery
-// ============================================================================
 
 function getAdbPath() {
   const paths = [
@@ -112,9 +81,6 @@ function getAppiumPaths() {
   ];
 }
 
-/**
- * Find first working executable from a list of paths
- */
 async function findExecutable(paths, testArg = '--version') {
   for (const p of paths) {
     try {
@@ -127,13 +93,6 @@ async function findExecutable(paths, testArg = '--version') {
   return null;
 }
 
-// ============================================================================
-// Health Checks
-// ============================================================================
-
-/**
- * Check if Appium server is running and reachable
- */
 async function checkAppiumServer() {
   const appiumUrl = process.env.APPIUM_URL || 'http://localhost:4723';
   const url = new URL(appiumUrl);
@@ -179,9 +138,6 @@ async function checkAppiumServer() {
   });
 }
 
-/**
- * Check if Android emulator or device is connected
- */
 async function checkAndroidDevice() {
   const adbPath = await findExecutable(getAdbPath(), 'version');
   
@@ -237,9 +193,6 @@ async function checkAndroidDevice() {
   }
 }
 
-/**
- * List available Android emulators (AVDs)
- */
 async function listAvailableEmulators() {
   const emulatorPath = await findExecutable(getEmulatorPath(), '-list-avds');
   if (!emulatorPath) return [];
@@ -252,14 +205,6 @@ async function listAvailableEmulators() {
   }
 }
 
-// ============================================================================
-// Auto-Start Services
-// ============================================================================
-
-/**
- * Start Appium server if not running
- * @returns {Promise<{started: boolean, message: string}>}
- */
 async function startAppiumServer() {
   const status = await checkAppiumServer();
   if (status.running) {
@@ -309,10 +254,6 @@ async function startAppiumServer() {
   return { started: false, message: `Appium failed to start: ${lastError}` };
 }
 
-/**
- * Start an Android emulator if none running
- * @returns {Promise<{started: boolean, message: string, deviceId: string|null}>}
- */
 async function startEmulator() {
   // First check if any device is already connected
   const deviceStatus = await checkAndroidDevice();
@@ -436,9 +377,6 @@ async function startEmulator() {
   return { started: false, message: 'Emulator boot timeout - emulator may still be starting', deviceId: null };
 }
 
-/**
- * Check if emulator is fully booted (not just connected)
- */
 async function checkEmulatorBooted(deviceId) {
   const adbPath = await findExecutable(getAdbPath(), 'version');
   if (!adbPath) return false;
@@ -455,14 +393,6 @@ async function checkEmulatorBooted(deviceId) {
   }
 }
 
-// ============================================================================
-// Main API
-// ============================================================================
-
-/**
- * Perform health check (with caching)
- * @param {boolean} bypassCache - Force fresh check
- */
 async function checkHealth(bypassCache = false) {
   const now = Date.now();
   
@@ -508,15 +438,7 @@ async function checkHealth(bypassCache = false) {
   return result;
 }
 
-/**
- * Ensure Android infrastructure is ready, auto-starting services as needed
- * 
- * @param {Object} options
- * @param {boolean} options.autoStart - Auto-start Appium and emulator (default: true)
- * @param {boolean} options.throwOnError - Throw if infrastructure not ready (default: true)
- * @param {function(string): void} options.onStatus - Callback for status updates
- * @returns {Promise<{health: HealthStatus, actions: string[]}>}
- */
+/** Ensure infrastructure is ready, auto-starting services if needed. */
 async function ensureReady(options = {}) {
   const { 
     autoStart = true, 
@@ -542,10 +464,6 @@ async function ensureReady(options = {}) {
     }
     return { health, actions: [] };
   }
-  
-  // -------------------------------------------------------------------------
-  // Auto-start sequence: Appium first, then emulator
-  // -------------------------------------------------------------------------
   
   reportStatus('🔧 Android infrastructure not ready. Starting services...');
   
@@ -594,9 +512,6 @@ async function ensureReady(options = {}) {
   return { health, actions };
 }
 
-/**
- * Create a readable error message from health status
- */
 function createReadableError(health) {
   const lines = ['Android automation infrastructure not ready:'];
   
@@ -618,36 +533,23 @@ function createReadableError(health) {
   return new Error(lines.join('\n'));
 }
 
-/**
- * Reset health check cache
- */
 function resetHealthCache() {
   lastHealthCheck = null;
   lastHealthCheckTime = 0;
 }
 
-/**
- * Simple sleep helper
- */
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 module.exports = {
-  // Main API
   checkHealth,
   ensureReady,
   resetHealthCache,
-  
-  // Individual checks (for health tool)
   checkAppiumServer,
   checkAndroidDevice,
   listAvailableEmulators,
-  
-  // Individual starters (for manual control)
   startAppiumServer,
   startEmulator,
-  
-  // Status reporting
   setStatusCallback,
 };

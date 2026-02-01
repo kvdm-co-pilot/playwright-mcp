@@ -17,17 +17,7 @@
 const { getAppiumDriver } = require('../../appiumClient');
 const { translateSelector, waitForElement, waitForUIStability, DEFAULT_TIMEOUT } = require('./utils');
 
-/**
- * Tap on an element or coordinates on Android
- * Mirrors Playwright's click() behavior with automatic waits
- *
- * @param {Object} params - Parameters
- * @param {string} [params.selector] - Playwright-style selector
- * @param {number} [params.x] - X coordinate for tap
- * @param {number} [params.y] - Y coordinate for tap
- * @param {number} [params.timeout] - Timeout in milliseconds (default: 30000)
- * @returns {Promise<Object>} Result of the tap operation
- */
+/** Tap on an element or coordinates. */
 async function android_tap(params) {
   const { selector, x, y, timeout = DEFAULT_TIMEOUT } = params;
 
@@ -39,16 +29,12 @@ async function android_tap(params) {
     const driver = await getAppiumDriver();
 
     if (x !== undefined && y !== undefined) {
-      // Tap at coordinates using W3C Actions API
-      await driver.action('pointer', {
-        parameters: { pointerType: 'touch' }
-      })
+      await driver.action('pointer', { parameters: { pointerType: 'touch' } })
         .move({ x: Math.round(x), y: Math.round(y) })
         .down()
         .up()
         .perform();
 
-      // Wait for UI stability after action (internal, automatic)
       await waitForUIStability(driver);
 
       return {
@@ -58,14 +44,9 @@ async function android_tap(params) {
         }],
       };
     } else {
-      // Translate selector and wait for element (Playwright-style automatic waits)
       const androidSelector = translateSelector(selector);
       const element = await waitForElement(driver, androidSelector, { timeout });
-
-      // Perform tap
       await element.click();
-
-      // Wait for UI stability after action (internal, automatic)
       await waitForUIStability(driver);
 
       return {
@@ -76,7 +57,6 @@ async function android_tap(params) {
       };
     }
   } catch (error) {
-    // Match Playwright error message patterns
     if (error.message.includes('Timeout')) {
       throw new Error(`Timed out waiting for element "${selector}" to be visible on mobile target. ${error.message}`);
     }

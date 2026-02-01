@@ -17,17 +17,7 @@
 const { getAppiumDriver } = require('../../appiumClient');
 const { translateSelector, waitForElement, waitForUIStability, DEFAULT_TIMEOUT } = require('./utils');
 
-/**
- * Input text into an element on Android
- * Mirrors Playwright's fill() behavior with automatic waits
- *
- * @param {Object} params - Parameters
- * @param {string} params.selector - Playwright-style selector
- * @param {string} params.text - Text to input
- * @param {boolean} [params.clear=false] - Whether to clear existing text first
- * @param {number} [params.timeout] - Timeout in milliseconds (default: 30000)
- * @returns {Promise<Object>} Result of the input operation
- */
+/** Input text into an element. */
 async function android_input_text(params) {
   const { selector, text, clear = false, timeout = DEFAULT_TIMEOUT } = params;
 
@@ -41,18 +31,11 @@ async function android_input_text(params) {
 
   try {
     const driver = await getAppiumDriver();
-
-    // Translate selector and wait for element (Playwright-style automatic waits)
     const androidSelector = translateSelector(selector);
     const element = await waitForElement(driver, androidSelector, { timeout });
 
-    if (clear) {
-      await element.clearValue();
-    }
-
+    if (clear) await element.clearValue();
     await element.setValue(text);
-
-    // Wait for UI stability after input (internal, automatic)
     await waitForUIStability(driver);
 
     return {
@@ -62,7 +45,6 @@ async function android_input_text(params) {
       }],
     };
   } catch (error) {
-    // Match Playwright error message patterns
     if (error.message.includes('Timeout')) {
       throw new Error(`Timed out waiting for element "${selector}" to be visible on mobile target. ${error.message}`);
     }

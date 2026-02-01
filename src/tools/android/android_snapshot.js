@@ -16,10 +16,7 @@
 
 const { getAppiumDriver, isMockMode } = require('../../appiumClient');
 
-/**
- * Parse XML string into a tree structure
- * Handles Android UI hierarchy XML format with proper parent-child relationships
- */
+/** Parses Android UI hierarchy XML into a tree structure. */
 function parseXMLToTree(xmlString) {
   const elements = [];
   const stack = [];
@@ -68,9 +65,7 @@ function parseXMLToTree(xmlString) {
   return elements;
 }
 
-/**
- * Collect all text content from an element and its descendants
- */
+/** Recursively collects text content from element and descendants. */
 function collectAllText(element) {
   const texts = [];
   
@@ -87,9 +82,7 @@ function collectAllText(element) {
   return [...new Set(texts.filter(Boolean))]; // Dedupe
 }
 
-/**
- * Parse bounds string "[x1,y1][x2,y2]" to object
- */
+/** Parses bounds string "[x1,y1][x2,y2]" into an object with dimensions. */
 function parseBounds(boundsStr) {
   if (!boundsStr) return null;
   const match = boundsStr.match(/\[(\d+),(\d+)\]\[(\d+),(\d+)\]/);
@@ -109,9 +102,7 @@ function parseBounds(boundsStr) {
   };
 }
 
-/**
- * Get the semantic type of an element for categorization
- */
+/** Maps Android class names to semantic UI types. */
 function getSemanticType(element) {
   const { tag, attrs } = element;
   const className = tag.split('.').pop().toLowerCase();
@@ -139,38 +130,31 @@ function getSemanticType(element) {
   return 'container';
 }
 
-/**
- * Build a comprehensive UI model from the XML tree
- */
+/** Builds a semantic UI model from parsed XML tree. */
 function buildUIModel(elements, screenWidth = 1080, screenHeight = 2400) {
   const model = {
     screen: { width: screenWidth, height: screenHeight },
-    items: [],        // All meaningful items with full context
-    inputs: [],       // Text input fields
-    toggles: [],      // Switches, checkboxes
-    buttons: [],      // Explicit buttons
-    scrollables: []   // Scrollable containers
+    items: [],
+    inputs: [],
+    toggles: [],
+    buttons: [],
+    scrollables: []
   };
   
   function processElement(element) {
     const { attrs } = element;
-    
-    // Skip non-displayed elements
     if (attrs.displayed === 'false') return;
     
     const bounds = parseBounds(attrs.bounds);
     const semanticType = getSemanticType(element);
     
-    // Collect text from this element AND all its children
     const allTexts = collectAllText(element);
     const directText = attrs.text?.trim() || '';
     const contentDesc = attrs['content-desc']?.trim() || '';
     const resourceId = attrs['resource-id'] || '';
     
-    // Determine the best label for this element
-    let label = allTexts.join(' • ') || contentDesc || resourceId.split('/').pop()?.replace(/_/g, ' ') || '';
+    const label = allTexts.join(' • ') || contentDesc || resourceId.split('/').pop()?.replace(/_/g, ' ') || '';
     
-    // Build selector options (multiple strategies for flexibility)
     const selectors = [];
     if (directText) selectors.push({ type: 'text', value: directText, selector: `text=${directText}` });
     if (contentDesc) selectors.push({ type: 'content-desc', value: contentDesc, selector: `content-desc=${contentDesc}` });
@@ -181,7 +165,6 @@ function buildUIModel(elements, screenWidth = 1080, screenHeight = 2400) {
                          attrs['long-clickable'] === 'true' || attrs.focusable === 'true';
     const isEnabled = attrs.enabled !== 'false';
     
-    // Build element info object
     const info = {
       type: semanticType,
       class: element.tag.split('.').pop(),
@@ -206,7 +189,6 @@ function buildUIModel(elements, screenWidth = 1080, screenHeight = 2400) {
       }
     };
     
-    // Categorize into appropriate lists
     const shouldInclude = isActionable || semanticType === 'input' || 
                           semanticType === 'toggle' || semanticType === 'checkbox' ||
                           (directText && semanticType === 'text');
@@ -227,7 +209,6 @@ function buildUIModel(elements, screenWidth = 1080, screenHeight = 2400) {
       model.scrollables.push(info);
     }
     
-    // Process children
     for (const child of element.children || []) {
       processElement(child);
     }
@@ -237,15 +218,11 @@ function buildUIModel(elements, screenWidth = 1080, screenHeight = 2400) {
     processElement(element);
   }
   
-  // Sort items by vertical position for natural reading order
   model.items.sort((a, b) => (a.bounds?.y1 || 0) - (b.bounds?.y1 || 0));
   
   return model;
 }
 
-/**
- * Format the UI model as markdown for agent consumption
- */
 function formatAsMarkdown(model) {
   let out = '# Android Screen Snapshot\n\n';
   out += `📱 **Screen:** ${model.screen.width}×${model.screen.height}\n`;
@@ -257,7 +234,6 @@ function formatAsMarkdown(model) {
     return out;
   }
   
-  // Main elements table
   out += '## Interactive Elements\n\n';
   out += '| # | Type | Label | Selector | State |\n';
   out += '|--:|------|-------|----------|-------|\n';
@@ -274,7 +250,6 @@ function formatAsMarkdown(model) {
     out += `| ${i + 1} | ${item.type} | ${label} | \`${selector}\` | ${states.join(' ') || '-'} |\n`;
   });
   
-  // Toggles section (important for settings)
   if (model.toggles.length > 0) {
     out += '\n## Toggles & Switches\n\n';
     model.toggles.forEach((t, i) => {
@@ -284,7 +259,6 @@ function formatAsMarkdown(model) {
     });
   }
   
-  // Input fields section
   if (model.inputs.length > 0) {
     out += '\n## Input Fields\n\n';
     model.inputs.forEach((inp, i) => {
@@ -294,7 +268,6 @@ function formatAsMarkdown(model) {
     });
   }
   
-  // Scrollable areas
   if (model.scrollables.length > 0) {
     out += '\n## Scrollable Areas\n\n';
     model.scrollables.forEach((s, i) => {
@@ -309,9 +282,6 @@ function formatAsMarkdown(model) {
   return out;
 }
 
-/**
- * Format as JSON for programmatic use
- */
 function formatAsJSON(model) {
   return JSON.stringify({
     screen: model.screen,
@@ -387,19 +357,15 @@ module.exports = {
       const driver = await getAppiumDriver();
       const pageSource = await driver.getPageSource();
       
-      // Get screen dimensions
       let screenWidth = 1080, screenHeight = 2400;
       try {
         const size = await driver.getWindowSize();
         screenWidth = size.width;
         screenHeight = size.height;
-      } catch (e) { /* use defaults */ }
+      } catch { /* use defaults */ }
       
-      // Parse and build model
       const tree = parseXMLToTree(pageSource);
       const model = buildUIModel(tree, screenWidth, screenHeight);
-      
-      // Format output
       const output = args.format === 'json' ? formatAsJSON(model) : formatAsMarkdown(model);
       
       return { content: [{ type: 'text', text: output }] };

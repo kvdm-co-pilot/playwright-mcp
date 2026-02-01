@@ -46,7 +46,6 @@ module.exports = {
       let actions = [];
       
       if (autoStart) {
-        // Use ensureReady which auto-starts services
         const result = await ensureReady({
           autoStart: true,
           throwOnError: false,
@@ -55,32 +54,23 @@ module.exports = {
         health = result.health;
         actions = result.actions;
       } else {
-        // Just check health without starting anything
         health = await checkHealth(true);
       }
       
       let output = '# Android Infrastructure Health\n\n';
       
-      // Show status messages from startup process
       if (statusMessages.length > 0) {
-        output += '## Startup Log\n\n';
-        output += '```\n';
-        statusMessages.forEach(msg => {
-          output += `${msg}\n`;
-        });
+        output += '## Startup Log\n\n```\n';
+        statusMessages.forEach(msg => output += `${msg}\n`);
         output += '```\n\n';
       }
       
-      // Show what we did if auto-start was used
       if (autoStart && actions.length > 0) {
         output += '## Actions Taken\n\n';
-        actions.forEach(action => {
-          output += `- ${action}\n`;
-        });
+        actions.forEach(action => output += `- ${action}\n`);
         output += '\n';
       }
       
-      // Status indicators
       const appiumIcon = health.appiumRunning ? '✅' : '❌';
       const deviceIcon = health.emulatorRunning ? '✅' : '❌';
       const overallIcon = health.healthy ? '✅' : '❌';
@@ -101,34 +91,25 @@ module.exports = {
         output += '\n';
       }
       
-      // Show available emulators if verbose or unhealthy
-      if ((verbose || !health.emulatorRunning)) {
+      if (verbose || !health.emulatorRunning) {
         const emulators = await listAvailableEmulators();
         if (emulators.length > 0) {
           output += '\n### Available Emulators\n\n';
-          emulators.forEach(emu => {
-            output += `- \`${emu}\`\n`;
-          });
+          emulators.forEach(emu => output += `- \`${emu}\`\n`);
         }
       }
       
-      // Recommendations if unhealthy
-      if (!health.healthy && health.recommendations && health.recommendations.length > 0) {
+      if (!health.healthy && health.recommendations?.length > 0) {
         output += '\n### Recommendations\n\n';
-        health.recommendations.forEach((rec, i) => {
-          output += `${i + 1}. ${rec}\n`;
-        });
+        health.recommendations.forEach((rec, i) => output += `${i + 1}. ${rec}\n`);
         
-        // Suggest auto-start if not already used
         if (!autoStart) {
-          output += '\n💡 **Tip:** Call this tool with `autoStart: true` to automatically start services.\n';
+          output += '\n💡 **Tip:** Call with `autoStart: true` to automatically start services.\n';
         }
       }
       
-      // Quick commands reference
       if (!health.healthy) {
-        output += '\n### Quick Fix Commands\n\n';
-        output += '```bash\n';
+        output += '\n### Quick Fix Commands\n\n```bash\n';
         if (!health.appiumRunning) {
           output += '# Start Appium server\n';
           output += 'appium &\n\n';
@@ -150,14 +131,11 @@ module.exports = {
       };
       
     } catch (error) {
-      // Include any status messages we collected before the error
       let errorOutput = '# Android Health Check Failed\n\n';
       
       if (statusMessages.length > 0) {
         errorOutput += '## Progress Before Error\n\n';
-        statusMessages.forEach(msg => {
-          errorOutput += `- ${msg}\n`;
-        });
+        statusMessages.forEach(msg => errorOutput += `- ${msg}\n`);
         errorOutput += '\n';
       }
       

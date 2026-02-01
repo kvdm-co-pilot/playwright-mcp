@@ -28,9 +28,6 @@ const {
   DEFAULT_TIMEOUT,
 } = require('./utils');
 
-/**
- * Android tool definitions for MCP
- */
 const androidToolDefinitions = [
   {
     name: 'android_launch_app',
@@ -114,9 +111,6 @@ const androidToolDefinitions = [
   androidHealth.definition,
 ];
 
-/**
- * Map of tool names to their handler functions
- */
 const androidToolHandlers = {
   android_launch_app,
   android_tap,
@@ -126,13 +120,6 @@ const androidToolHandlers = {
   android_health: androidHealth.handler,
 };
 
-/**
- * Handle an Android tool call
- *
- * @param {string} toolName - Name of the tool to execute
- * @param {Object} params - Tool parameters
- * @returns {Promise<Object>} Tool result
- */
 async function handleAndroidTool(toolName, params) {
   const handler = androidToolHandlers[toolName];
 
@@ -143,12 +130,6 @@ async function handleAndroidTool(toolName, params) {
   return await handler(params);
 }
 
-/**
- * Check if a tool name is an Android tool
- *
- * @param {string} toolName - Name of the tool
- * @returns {boolean} True if it's an Android tool
- */
 function isAndroidTool(toolName) {
   return toolName in androidToolHandlers;
 }

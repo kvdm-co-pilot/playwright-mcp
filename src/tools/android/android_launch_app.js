@@ -17,15 +17,7 @@
 const { getAppiumDriver } = require('../../appiumClient');
 const { waitForUIStability } = require('./utils');
 
-/**
- * Launch an Android application
- * Automatic waits are built-in - agents don't need to add sleeps
- *
- * @param {Object} params - Parameters
- * @param {string} [params.packageName] - Android package name (e.g., 'com.example.app')
- * @param {string} [params.appPath] - Path to APK file
- * @returns {Promise<Object>} Result of the launch operation
- */
+/** Launch an Android app by package name or APK path. */
 async function android_launch_app(params) {
   const { packageName, appPath } = params;
 
@@ -42,9 +34,6 @@ async function android_launch_app(params) {
 
     if (packageName) {
       await driver.activateApp(packageName);
-
-      // Wait for app to initialize and UI to stabilize
-      // This is internal and automatic - agents don't need to know
       await waitForUIStability(driver, 2000);
     }
 
