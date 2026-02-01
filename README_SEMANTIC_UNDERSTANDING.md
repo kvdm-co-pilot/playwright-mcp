@@ -1,90 +1,51 @@
-# 🧠 Semantic Android Automation
+# Semantic UI Understanding for Android Automation
 
-## The Magic: Semantic Understanding
+## Overview
 
-**The agent doesn't follow scripts—it understands screens.**
+This document explains the technical approach behind Android MCP's semantic UI understanding—enabling AI agents to reason about screen content rather than execute hardcoded selectors.
 
-Traditional mobile automation is brittle. You write selectors, they break. You hardcode coordinates, the UI changes. You maintain test scripts, they rot.
+## Problem Statement
 
-With the Android MCP Server, AI agents can *see* and *understand* what's on screen—just like a human would.
+Traditional mobile automation relies on:
+- **Fixed selectors** that break when IDs change
+- **Hardcoded navigation paths** that fail on layout updates  
+- **Pixel coordinates** that don't scale across devices
 
----
+This creates brittle automation that requires constant maintenance.
 
-## How It Works
+## Solution: View Tree Visibility
 
-When the agent calls `android_snapshot`, it receives a structured view of the entire UI hierarchy:
+The `android_snapshot` tool extracts the complete Android UI hierarchy and transforms it into a semantic model that agents can reason about.
 
-```
-┌─────────────────────────────────────────────┐
-│ ⚙️  Settings                                │
-├─────────────────────────────────────────────┤
-│                                             │
-│   🔍 Search settings                        │
-│                                             │
-│   📶 Network & internet                     │
-│      Mobile, Wi-Fi, hotspot                 │
-│                                             │
-│   📱 Connected devices                      │
-│      Bluetooth, pairing                     │
-│                                             │
-│   📲 Apps                                   │
-│      Recent apps, default apps              │
-│                                             │
-│   🔔 Notifications                          │
-│      App notifications, DND                 │
-│                                             │
-└─────────────────────────────────────────────┘
-```
-
-The snapshot returns this as structured, actionable data:
-
-| Type | Label | Selector |
-|------|-------|----------|
-| text | Network & internet | `text=Network & internet` |
-| text | Mobile, Wi-Fi, hotspot | `text=Mobile, Wi-Fi, hotspot` |
-| text | Connected devices | `text=Connected devices` |
-| text | Bluetooth, pairing | `text=Bluetooth, pairing` |
-
----
-
-## Semantic Reasoning in Action
-
-Here's the key insight: **the agent can find things that aren't visible**.
-
-When asked to *"check data usage"*, the agent:
-
-1. **Takes a snapshot** → Sees the Settings menu structure
-2. **Reasons semantically** → "Data usage" isn't visible, but "Network & internet" with subtitle "Mobile, Wi-Fi, hotspot" clearly relates to data/network settings
-3. **Navigates intelligently** → Taps "Network & internet" to drill down
-4. **Repeats** → Takes another snapshot, finds "Data usage" in the submenu
+### Data Flow
 
 ```
-User: "Check my data usage"
-
-Agent thinking:
-  → Snapshot shows Settings screen
-  → No "data usage" visible directly  
-  → BUT "Network & internet" shows "Mobile, Wi-Fi, hotspot"
-  → Data usage is a network/mobile feature
-  → Action: tap "Network & internet"
-  → [new snapshot]
-  → Found: "Data usage" - tap it
-  → [new snapshot]  
-  → Reading data usage statistics...
+Android Device                    MCP Server                         AI Agent
+      │                               │                                  │
+      │   UiAutomator2 getPageSource  │                                  │
+      │◀──────────────────────────────│                                  │
+      │                               │                                  │
+      │   XML UI Hierarchy            │                                  │
+      │──────────────────────────────▶│                                  │
+      │                               │                                  │
+      │                               │  Parse & Transform               │
+      │                               │  ────────────────                │
+      │                               │                                  │
+      │                               │  Semantic Model (JSON/Markdown)  │
+      │                               │─────────────────────────────────▶│
+      │                               │                                  │
+      │                               │                       Agent reasons
+      │                               │                       about content
+      │                               │                                  │
+      │                               │  android_tap(selector)           │
+      │                               │◀─────────────────────────────────│
+      │                               │                                  │
 ```
 
-This is **semantic navigation**—the agent understands the *meaning* and *hierarchy* of UI elements, not just their literal text.
+### Transformation Example
 
----
-
-## The View Tree: Our Secret Weapon
-
-### What We Built
-
-We added **complete view tree visibility** through the `android_snapshot` tool. This extracts the Android UI hierarchy and transforms it into an agent-friendly format:
-
-```javascript
-// Raw Android UI Hierarchy (XML)
+**Input: Android UI Automator XML**
+```xml
 <android.widget.LinearLayout>
   <android.widget.TextView 
     text="Network & internet"
@@ -93,149 +54,92 @@ We added **complete view tree visibility** through the `android_snapshot` tool. 
     text="Mobile, Wi-Fi, hotspot"
     resource-id="android:id/summary" />
 </android.widget.LinearLayout>
+```
 
-// Transformed to Agent-Friendly Format
+**Output: Semantic Model**
+```json
 {
-  type: "text",
-  label: "Network & internet • Mobile, Wi-Fi, hotspot",
-  text: "Network & internet",
-  childTexts: ["Mobile, Wi-Fi, hotspot"],
-  selectors: [
-    { type: "text", selector: "text=Network & internet" },
-    { type: "resource-id", selector: "resource-id=android:id/title" }
-  ],
-  state: { clickable: true, enabled: true }
+  "type": "clickable",
+  "label": "Network & internet",
+  "subtitle": "Mobile, Wi-Fi, hotspot",
+  "selectors": {
+    "text": "text=Network & internet",
+    "resourceId": "resource-id=android:id/title"
+  },
+  "state": {
+    "clickable": true,
+    "enabled": true
+  }
 }
 ```
 
-### Key Capabilities
+## Key Capabilities
 
-| Feature | Description |
-|---------|-------------|
-| **Hierarchical Context** | Parent-child relationships preserved, so subtitles are associated with their headers |
-| **Multiple Selectors** | Every element has text, resource-id, content-desc, and coordinate selectors |
-| **Semantic Types** | Elements classified as `button`, `toggle`, `input`, `text`, etc. |
-| **State Information** | Enabled, checked, focused, scrollable states exposed |
-| **Child Text Aggregation** | All text within a container collected for semantic matching |
+| Feature | Implementation | Benefit |
+|---------|----------------|---------|
+| **Hierarchical Context** | Parent-child relationships preserved | Subtitles associated with headers |
+| **Multiple Selectors** | text, resource-id, content-desc, coordinates | Fallback options if primary fails |
+| **Element Classification** | Widget class → semantic type mapping | Agent understands button vs toggle vs input |
+| **State Extraction** | enabled, checked, focused, scrollable | Agent knows current UI state |
+| **Text Aggregation** | All text within containers collected | Semantic matching on compound elements |
 
----
+## Agent Reasoning Example
 
-## Why This Matters
+**Task:** "Check data usage"
 
-### Traditional Automation (Fragile)
-```python
-# Breaks if text changes, if ID changes, if position changes...
-driver.find_element(By.ID, "com.android.settings:id/network_and_internet")
-```
+The agent doesn't know where "data usage" is, but can reason from context:
 
-### Semantic Automation (Resilient)
-```
-Agent: "I can see 'Network & internet' with subtitle about Mobile and Wi-Fi.
-        This is where network/data settings live. Tapping it."
-```
+1. **Snapshot** → Settings menu visible
+2. **Analysis** → "Data usage" not directly visible
+3. **Reasoning** → "Network & internet" with subtitle "Mobile, Wi-Fi, hotspot" relates to data/network
+4. **Action** → Tap "Network & internet"
+5. **Snapshot** → New screen with "Data usage" option
+6. **Action** → Tap "Data usage"
 
-The agent adapts because it **understands** the UI, not because it memorizes selectors.
+The agent navigates semantically rather than following a script.
 
----
+## Implementation Details
 
-## Technical Summary
+### UI Parser (`android_snapshot.js`)
 
-### What We Added
+Parses UiAutomator2 XML and extracts:
+- Interactive elements (buttons, toggles, inputs)
+- Text content and accessibility labels
+- Hierarchical relationships
+- Element states
 
-1. **`android_snapshot` tool** - Captures the complete Android view hierarchy
-2. **XML-to-model transformation** - Parses Android's UI Automator XML into semantic objects
-3. **Text aggregation** - Collects all text from element subtrees for context
-4. **Multi-format output** - Markdown tables (human-readable) or JSON (structured)
-5. **Smart categorization** - Automatic classification into inputs, buttons, toggles, etc.
+### Selector Translation (`utils.js`)
 
-### The Flow
+Converts Playwright-style selectors to UiAutomator2:
 
-```
-┌──────────────┐     ┌─────────────────┐     ┌──────────────────┐
-│   AI Agent   │────▶│ android_snapshot │────▶│  UI Hierarchy    │
-│              │     │      tool        │     │  (Semantic Model)│
-└──────────────┘     └─────────────────┘     └──────────────────┘
-       │                                              │
-       │         "Find data usage settings"          │
-       │◀────────────────────────────────────────────│
-       │                                              
-       ▼                                              
-┌──────────────────────────────────────────────────────────────┐
-│  Reasoning: "Network & internet" → "Mobile, Wi-Fi, hotspot"  │
-│            This is where data/network settings live          │
-└──────────────────────────────────────────────────────────────┘
-       │
-       ▼
-┌──────────────┐     ┌─────────────────┐
-│  android_tap │────▶│ Navigate to     │
-│              │     │ Network settings │
-└──────────────┘     └─────────────────┘
-```
+| Input | Output |
+|-------|--------|
+| `#login` | `~login` (accessibility ID) |
+| `[data-testid="x"]` | `~x` |
+| `text=Submit` | `//*[@text='Submit' or @content-desc='Submit']` |
+| `.Button` | `//*[contains(@class, 'Button')]` |
 
----
+### Automatic Waits
 
-## Example: Complete Interaction
+Element interactions include polling waits for:
+- Element existence in hierarchy
+- Element visibility (displayed=true)
+- Element enabled state
+- Post-tap UI stability
 
-**Task:** "Turn off mobile data"
+## Comparison
 
-```
-[Snapshot 1: Settings main screen]
-- Network & internet (Mobile, Wi-Fi, hotspot) ← Agent identifies this as relevant
-- Connected devices
-- Apps
+| Approach | Selector | Adaptability | Maintenance |
+|----------|----------|--------------|-------------|
+| Hardcoded IDs | `com.app:id/btn_123` | None | High |
+| XPath | `//Button[@text='Login']` | Low | Medium |
+| **Semantic** | Agent reasons from context | High | Low |
 
-[Agent taps "Network & internet"]
+## Files
 
-[Snapshot 2: Network settings]
-- Internet (T-Mobile, Wi-Fi)          ← Contains mobile data toggle
-- Calls & SMS
-- Airplane mode: OFF
-- Hotspot & tethering
-
-[Agent taps "Internet"]
-
-[Snapshot 3: Internet settings]
-- T-Mobile [toggle: ON]              ← This is mobile data!
-- Wi-Fi [toggle: ON]
-
-[Agent taps T-Mobile toggle to turn OFF]
-
-[Snapshot 4: Confirmation]
-- T-Mobile [toggle: OFF]             ← Success!
-
-Agent: "Done! I've turned off mobile data. Your device is now using Wi-Fi only."
-```
-
----
-
-## Getting Started
-
-```bash
-# Prerequisites
-npm install -g appium
-appium driver install uiautomator2
-
-# Use the MCP server
-npx @anthropic/playwright-mcp --android
-```
-
-Then simply ask your AI agent to interact with your Android device:
-
-> "Open Settings and show me my storage usage"
-> "Turn on dark mode"  
-> "Connect to the WiFi network called 'Home'"
-
-The agent figures out *how*—you just say *what*.
-
----
-
-## Summary
-
-| Before (Script-Based) | After (Semantic Understanding) |
-|-----------------------|-------------------------------|
-| Brittle selectors | Adaptive navigation |
-| Hardcoded paths | Contextual reasoning |
-| Breaks on UI changes | Understands meaning |
-| Requires maintenance | Self-healing |
-
-**The view tree visibility we added enables AI agents to truly *see* and *understand* Android interfaces, making mobile automation as natural as asking a human to help.**
+| File | Purpose |
+|------|---------|
+| `src/tools/android/android_snapshot.js` | UI hierarchy parsing and transformation |
+| `src/tools/android/utils.js` | Selector translation, automatic waits |
+| `src/appiumClient.js` | WebDriverIO session management |
+| `src/androidHealth.js` | Infrastructure health and auto-start |

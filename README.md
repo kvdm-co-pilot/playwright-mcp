@@ -1,12 +1,55 @@
 ## Playwright MCP
 
-A Model Context Protocol (MCP) server that provides browser automation capabilities using [Playwright](https://playwright.dev). This server enables LLMs to interact with web pages through structured accessibility snapshots, bypassing the need for screenshots or visually-tuned models.
+A Model Context Protocol (MCP) server that provides browser and mobile automation capabilities using [Playwright](https://playwright.dev) and [Appium](https://appium.io). This server enables LLMs to interact with web pages and Android applications through structured accessibility snapshots.
 
 ### Key Features
 
-- **Fast and lightweight**. Uses Playwright's accessibility tree, not pixel-based input.
-- **LLM-friendly**. No vision models needed, operates purely on structured data.
-- **Deterministic tool application**. Avoids ambiguity common with screenshot-based approaches.
+- **Structured Automation** — Uses accessibility trees (web) and UI hierarchies (Android) instead of pixel-based recognition
+- **Cross-Platform** — Unified API patterns across web browsers (Chromium, Firefox, WebKit) and Android devices
+- **Self-Healing** — Semantic element selection adapts to UI changes without brittle selectors
+- **Zero Vision Models** — Operates on structured data; no screenshot parsing or vision APIs required
+
+### Android MCP Support (This Branch)
+
+This branch extends Playwright MCP with Android mobile automation via Appium and UiAutomator2.
+
+**Architecture:**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  AI Agent (VS Code Copilot, Claude, etc.)                       │
+└────────────────────────┬────────────────────────────────────────┘
+                         │ MCP Protocol (JSON-RPC over STDIO)
+┌────────────────────────▼────────────────────────────────────────┐
+│  Playwright MCP Server                                          │
+│  ├── Browser Tools (Playwright)                                 │
+│  └── Android Tools (Appium + UiAutomator2)  ◄── This branch     │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+        ┌────────────────┴────────────────┐
+        ▼                                 ▼
+┌───────────────────┐           ┌─────────────────────────────────┐
+│ Chromium/Firefox/ │           │ Android Device/Emulator         │
+│ WebKit            │           │ via ADB + UiAutomator2          │
+└───────────────────┘           └─────────────────────────────────┘
+```
+
+**Core Components Added:**
+| Component | File | Responsibility |
+|-----------|------|----------------|
+| Health Manager | `src/androidHealth.js` | Infrastructure health checks, auto-start Appium/emulator |
+| Session Manager | `src/appiumClient.js` | WebDriverIO driver lifecycle, session pooling |
+| UI Parser | `src/tools/android/android_snapshot.js` | XML hierarchy → semantic model transformation |
+| Selector Translator | `src/tools/android/utils.js` | Playwright selectors → Appium/UiAutomator2 |
+
+**Tools Provided:**
+- `android_health` — Verify/auto-start infrastructure (Appium server, emulator)
+- `android_snapshot` — Capture semantic UI hierarchy for agent reasoning
+- `android_tap` — Element/coordinate tap with automatic waits
+- `android_input_text` — Text input with clear option
+- `android_launch_app` — Launch by package name or APK path
+- `android_screenshot` — Full screen or element capture
+
+See [ANDROID_MCP.md](ANDROID_MCP.md) for setup instructions and [README_SEMANTIC_UNDERSTANDING.md](README_SEMANTIC_UNDERSTANDING.md) for technical design.
 
 ### Requirements
 - Node.js 18 or newer
@@ -751,72 +794,50 @@ http.createServer(async (req, res) => {
 ```
 </details>
 
-### Experimental Android Support
+### Android Mobile Automation
 
-Playwright MCP includes experimental support for Android mobile automation using Appium. This allows agents to automate Android apps using the same familiar Playwright selector syntax.
+This branch adds Android support via Appium and UiAutomator2. The implementation provides semantic UI understanding—agents can reason about screen content rather than following hardcoded selectors.
 
-> **📖 Full Setup Guide**: See [docs/ANDROID_SETUP_GUIDE.md](docs/ANDROID_SETUP_GUIDE.md) for complete instructions on setting up Android SDK, emulator, and Appium for local or CI testing.
+**Prerequisites:**
+- Node.js ≥ 18
+- Android SDK with platform-tools
+- Appium v2 with UiAutomator2 driver
+- Android emulator (AVD) or physical device
 
-<details>
-<summary><b>Requirements</b></summary>
-
-- **Android SDK** with platform-tools and emulator
-- **Android emulator** (AVD) or real device connected
-- **Appium server** running locally (default: `http://localhost:4723`)
-- **UiAutomator2 driver** installed in Appium
-- **App installed** on the device
-
-Quick verification:
+**Quick Start:**
 ```bash
-# Check device connected
-adb devices
+# Install Appium and driver (one-time)
+npm install -g appium && appium driver install uiautomator2
 
-# Check Appium running
-curl http://localhost:4723/status
+# Verify prerequisites
+adb devices && appium --version
 ```
 
-</details>
-
-<details>
-<summary><b>Environment Variables</b></summary>
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `APPIUM_URL` | Appium server URL | `http://localhost:4723` |
-| `ANDROID_DEVICE` | Android device name | `Android Emulator` |
-| `ANDROID_AVD` | Android Virtual Device name | - |
-| `PLAYWRIGHT_MCP_ANDROID_MOCK` | Enable mock mode for testing | - |
-
-</details>
+Full setup: [ANDROID_MCP.md](ANDROID_MCP.md)
 
 <details>
 <summary><b>Selector Translation</b></summary>
 
-Android tools automatically translate Playwright-style selectors to Android-compatible selectors:
+Android tools translate Playwright-style selectors to UiAutomator2:
 
-| Playwright Selector | Android Selector |
-|---------------------|-----------------|
+| Playwright Syntax | UiAutomator2 Translation |
+|-------------------|--------------------------|
 | `#login-button` | `~login-button` (accessibility ID) |
 | `[data-testid="submit"]` | `~submit` (accessibility ID) |
 | `text=Login` | `//*[@text='Login' or @content-desc='Login']` |
 | `.button` | `//*[contains(@class, 'button')]` |
-| `button:has-text("Next")` | `//android.widget.Button[@text='Next' or @content-desc='Next']` |
-
-For best results, use accessibility labels or `data-testid` attributes in your Android app.
 
 </details>
 
 <details>
-<summary><b>Automatic Waits</b></summary>
+<summary><b>Auto-Start Behavior</b></summary>
 
-Android tools include automatic waits that mirror Playwright's behavior:
+Android tools automatically manage infrastructure:
+1. Checks if Appium is running → starts if not (30s timeout)
+2. Checks for connected device → starts first available emulator if not (2min timeout)
+3. Logs status during startup for observability
 
-- **Element existence** - Waits for element to exist in the DOM
-- **Element visibility** - Waits for element to be displayed
-- **Element enabled** - Waits for element to be interactive
-- **UI stability** - Short internal wait for animations to complete
-
-All waits use polling (not fixed sleeps) with Playwright's default timeout (30s).
+No manual service management required.
 
 </details>
 
@@ -1192,42 +1213,49 @@ All waits use polling (not fixed sleeps) with Playwright's default timeout (30s)
 </details>
 
 <details>
-<summary><b>Android mobile automation (experimental)</b></summary>
+<summary><b>Android mobile automation</b></summary>
 
-<!-- NOTE: Android tools added for mobile automation support -->
-
-- **android_launch_app**
-  - Title: Launch Android app
-  - Description: Launch an Android application by package name or APK path
+- **android_health**
+  - Description: Check infrastructure status (Appium server, device connection). Auto-starts services if needed.
   - Parameters:
-    - `packageName` (string, optional): Android package name (e.g., com.example.app)
-    - `appPath` (string, optional): Path to APK file to install and launch
-  - Read-only: **false**
+    - `autoStart` (boolean, optional): Start Appium/emulator if not running. Default: true
+    - `verbose` (boolean, optional): Include available emulator list
+  - Read-only: **true**
+
+- **android_snapshot**
+  - Description: Capture semantic UI hierarchy. Returns all interactive elements with types, labels, selectors, and states.
+  - Parameters:
+    - `format` (string, optional): Output format: "markdown" or "json". Default: "markdown"
+  - Read-only: **true**
 
 - **android_tap**
-  - Title: Tap on Android
-  - Description: Tap on an element or coordinates on Android. Uses Playwright-style selectors.
+  - Description: Tap element by selector or coordinates. Includes automatic waits for visibility/enabled state.
   - Parameters:
-    - `selector` (string, optional): Playwright-style selector for the element to tap
-    - `x` (number, optional): X coordinate for tap (use with y)
-    - `y` (number, optional): Y coordinate for tap (use with x)
+    - `selector` (string, optional): Playwright-style selector
+    - `x` (number, optional): X coordinate (use with y)
+    - `y` (number, optional): Y coordinate (use with x)
   - Read-only: **false**
 
 - **android_input_text**
-  - Title: Input text on Android
-  - Description: Input text into an element on Android. Uses Playwright-style selectors.
+  - Description: Input text into element. Waits for element to be focusable.
   - Parameters:
-    - `selector` (string): Playwright-style selector for the input element
+    - `selector` (string): Playwright-style selector for input element
     - `text` (string): Text to input
-    - `clear` (boolean, optional): Whether to clear existing text before input
+    - `clear` (boolean, optional): Clear existing text first
+  - Read-only: **false**
+
+- **android_launch_app**
+  - Description: Launch app by package name or install from APK path
+  - Parameters:
+    - `packageName` (string, optional): Android package name (e.g., com.example.app)
+    - `appPath` (string, optional): Path to APK file
   - Read-only: **false**
 
 - **android_screenshot**
-  - Title: Screenshot on Android
-  - Description: Take a screenshot on Android
+  - Description: Capture screenshot of full screen or specific element
   - Parameters:
-    - `path` (string, optional): Path to save the screenshot file
-    - `selector` (string, optional): Selector for element screenshot (optional)
+    - `path` (string, optional): Save path for screenshot file
+    - `selector` (string, optional): Element selector for targeted capture
   - Read-only: **true**
 
 </details>
