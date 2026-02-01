@@ -2,7 +2,7 @@
 
 ## 🎯 Overview
 
-Playwright MCP is a **Model Context Protocol (MCP) server** that bridges Large Language Models (LLMs) with browser automation capabilities. It provides a structured, deterministic interface for web interaction without relying on visual/screenshot-based approaches.
+Playwright MCP is a **Model Context Protocol (MCP) server** that bridges Large Language Models (LLMs) with browser and mobile automation capabilities. It provides a structured, deterministic interface for web and Android interaction without relying on visual/screenshot-based approaches.
 
 ## 🏛️ High-Level Architecture
 
@@ -31,23 +31,23 @@ Playwright MCP is a **Model Context Protocol (MCP) server** that bridges Large L
          │                            │
          └─────────────┬──────────────┘
                        │
-                       │ Playwright API
-                       │
-         ┌─────────────▼──────────────┐
-         │                            │
-         │  Playwright Core Library   │
-         │  (microsoft/playwright)    │
-         │                            │
-         └─────────────┬──────────────┘
-                       │
-                       │ DevTools Protocol / WebDriver
-                       │
-    ┌──────────────────┴──────────────────┐
-    │                                     │
-┌───▼────┐  ┌──────────┐  ┌──────────┐   │
-│Chromium│  │ Firefox  │  │ WebKit   │   │
-│        │  │          │  │          │   │
-└────────┘  └──────────┘  └──────────┘   │
+        ┌──────────────┴──────────────┐
+        │                             │
+        ▼                             ▼
+┌───────────────────┐       ┌───────────────────┐
+│  Playwright API   │       │  Appium/WebDriverIO│
+│                   │       │                   │
+│  Browser Tools    │       │  Android Tools    │
+└─────────┬─────────┘       └─────────┬─────────┘
+          │                           │
+          │ DevTools Protocol         │ UiAutomator2
+          │                           │
+    ┌─────┴─────┐               ┌─────┴─────┐
+    │           │               │           │
+┌───▼───┐ ┌────▼────┐      ┌───▼───────────▼───┐
+│Chrome │ │Firefox  │      │ Android Device/   │
+│       │ │WebKit   │      │ Emulator (ADB)    │
+└───────┘ └─────────┘      └───────────────────┘
 ```
 
 ## 📦 Component Architecture
@@ -102,6 +102,63 @@ packages/playwright/src/mcp/
     ├── locator.ts       # Element locator generation
     └── storage.ts       # State management
 ```
+
+### Layer 2b: Android Automation Layer
+
+Located in `src/` in this repository:
+
+```
+src/
+├── androidHealth.js      # Infrastructure health & auto-start
+├── appiumClient.js       # WebDriverIO session management
+└── tools/android/
+    ├── index.js          # Tool registry and handlers
+    ├── android_snapshot.js   # UI hierarchy → semantic model
+    ├── android_health.js     # Health check tool
+    └── utils.js          # Selector translation, waits
+```
+
+**Integration with Playwright Infrastructure:**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                  Shared Playwright MCP Infrastructure           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐            │
+│  │  --output-  │  │ --save-     │  │ --save-     │            │
+│  │    dir      │  │   trace     │  │   video     │            │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘            │
+│         │                │                │                    │
+│         └────────────────┴────────────────┘                    │
+│                          │                                     │
+│              ┌───────────▼───────────┐                        │
+│              │   Artifact Manager    │                        │
+│              │   (screenshots,       │                        │
+│              │    traces, reports)   │                        │
+│              └───────────┬───────────┘                        │
+│                          │                                     │
+│         ┌────────────────┴────────────────┐                   │
+│         ▼                                 ▼                   │
+│  ┌─────────────┐                  ┌─────────────┐             │
+│  │   Browser   │                  │   Android   │             │
+│  │    Tools    │                  │    Tools    │             │
+│  │             │                  │             │             │
+│  │ Playwright  │                  │  Appium +   │             │
+│  │    API      │                  │ UiAutomator2│             │
+│  └─────────────┘                  └─────────────┘             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Android Component Responsibilities:**
+
+| Component | File | Responsibility |
+|-----------|------|----------------|
+| Health Manager | `androidHealth.js` | Check Appium/emulator status, auto-start services |
+| Session Manager | `appiumClient.js` | WebDriverIO driver lifecycle, connection pooling |
+| UI Parser | `android_snapshot.js` | Parse UiAutomator2 XML into semantic model |
+| Selector Translator | `utils.js` | Convert Playwright selectors to Appium/XPath |
+| Wait Utilities | `utils.js` | Polling waits matching Playwright patterns |
 
 ### Layer 3: Transport Layer
 
@@ -228,10 +285,24 @@ CLI Args: --caps=vision,pdf
 | core        | ✓       | Basic browser automation       | ~20        |
 | core-tabs   | ✓       | Tab management                 | 1          |
 | core-install| ✓       | Browser installation           | 1          |
+| **android** | ✓       | **Android mobile automation**  | **6**      |
 | vision      | ✗       | Coordinate-based interactions  | 3          |
 | pdf         | ✗       | PDF generation                 | 1          |
 | testing     | ✗       | Test assertions                | 4          |
 | tracing     | ✗       | Trace recording                | 2          |
+
+### Android Capability Details
+
+The Android capability provides mobile automation tools that integrate with Playwright's infrastructure:
+
+| Tool | Description | Shared Infrastructure |
+|------|-------------|----------------------|
+| `android_health` | Infrastructure status & auto-start | Uses `--output-dir` for logs |
+| `android_snapshot` | UI hierarchy → semantic model | Same pattern as `browser_snapshot` |
+| `android_tap` | Tap with automatic waits | Matches Playwright wait behavior |
+| `android_input_text` | Text input with clear option | Same API pattern as `browser_type` |
+| `android_launch_app` | Launch by package/APK | — |
+| `android_screenshot` | Screen/element capture | Saves to `--output-dir` |
 
 ## 🔄 Request Processing Flow
 
@@ -366,6 +437,75 @@ async function handleClick(params: { element: string, ref: string }) {
          ▼
 4. Return formatted snapshot
 ```
+
+## 📱 Android UI Hierarchy System
+
+### Why UI Hierarchy (vs Screenshots)?
+
+The Android snapshot system mirrors the web accessibility snapshot approach:
+
+1. **Structured**: XML hierarchy parsed into semantic model
+2. **Semantic**: Widget types, text, content descriptions preserved
+3. **Fast**: No image processing or vision models required
+4. **Actionable**: Every element has selectors ready for interaction
+5. **State-aware**: Enabled, checked, focused states exposed
+
+### Android Snapshot Format
+
+```markdown
+# Android Screen Snapshot
+
+📱 **Screen:** 1080×2400
+📊 **Found:** 12 interactive elements
+
+## Interactive Elements
+
+| # | Type | Label | Selector | State |
+|--:|------|-------|----------|-------|
+| 1 | button | Navigate up | `content-desc=Navigate up` | - |
+| 2 | clickable | Network & internet | `text=Network & internet` | - |
+| 3 | toggle | Wi-Fi | `resource-id=...switchWidget` | ☑ ON |
+```
+
+### Android Snapshot Generation Process
+
+```
+1. Get UI hierarchy from UiAutomator2
+         │
+         ▼
+2. Call driver.getPageSource()
+         │
+         ├──> UiAutomator2 traverses view tree
+         ├──> Returns XML representation
+         └──> Includes all view attributes
+         │
+         ▼
+3. Parse XML to semantic model
+         │
+         ├──> Extract interactive elements
+         ├──> Classify widget types (button, toggle, input)
+         ├──> Aggregate text from child nodes
+         ├──> Generate multiple selector options
+         └──> Extract state (enabled, checked, focused)
+         │
+         ▼
+4. Format for agent consumption
+         │
+         ├──> Markdown table (human-readable)
+         └──> JSON (structured, for programmatic use)
+```
+
+### Selector Translation
+
+Playwright-style selectors are translated to UiAutomator2:
+
+| Playwright Syntax | UiAutomator2 Translation | Strategy |
+|-------------------|--------------------------|----------|
+| `#login-button` | `~login-button` | Accessibility ID |
+| `[data-testid="x"]` | `~x` | Accessibility ID |
+| `text=Login` | `//*[@text='Login' or @content-desc='Login']` | XPath |
+| `.Button` | `//*[contains(@class, 'Button')]` | XPath class match |
+| `resource-id=com.app:id/btn` | `id=com.app:id/btn` | Resource ID |
 
 ## 🔐 Security Architecture
 

@@ -49,6 +49,19 @@ This branch extends Playwright MCP with Android mobile automation via Appium and
 - `android_launch_app` — Launch by package name or APK path
 - `android_screenshot` — Full screen or element capture
 
+**Why Integrate into Playwright MCP?**
+
+Android tools are integrated directly into Playwright MCP rather than a standalone Appium MCP server. This architectural decision provides:
+
+| Benefit | Description |
+|---------|-------------|
+| **Unified Artifact Pipeline** | Screenshots, traces, and reports from both web and mobile go to the same `--output-dir` |
+| **Single Configuration** | One `mcp.json` entry, one set of environment variables |
+| **Consistent Selectors** | `text=Login` works identically on web and Android |
+| **Cross-Platform Workflows** | Agents can seamlessly switch between `browser_*` and `android_*` tools in one session |
+| **Shared Infrastructure** | Tracing, video recording, session management, and reporting extend to mobile |
+| **Reduced Agent Complexity** | No tool discovery across multiple MCP servers |
+
 See [ANDROID_MCP.md](ANDROID_MCP.md) for setup instructions and [README_SEMANTIC_UNDERSTANDING.md](README_SEMANTIC_UNDERSTANDING.md) for technical design.
 
 ### Requirements
