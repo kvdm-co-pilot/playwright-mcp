@@ -18,6 +18,8 @@ const { android_launch_app } = require('./android_launch_app');
 const { android_tap } = require('./android_tap');
 const { android_input_text } = require('./android_input_text');
 const { android_screenshot } = require('./android_screenshot');
+const androidSnapshot = require('./android_snapshot');
+const androidHealth = require('./android_health');
 const {
   translateSelector,
   waitForElement,
@@ -108,6 +110,8 @@ const androidToolDefinitions = [
       },
     },
   },
+  androidSnapshot.definition,
+  androidHealth.definition,
 ];
 
 /**
@@ -118,6 +122,8 @@ const androidToolHandlers = {
   android_tap,
   android_input_text,
   android_screenshot,
+  android_snapshot: androidSnapshot.handler,
+  android_health: androidHealth.handler,
 };
 
 /**

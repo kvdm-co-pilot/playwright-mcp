@@ -15,8 +15,10 @@
  */
 
 const { remote } = require('webdriverio');
+const { ensureReady, checkHealth, resetHealthCache, setStatusCallback } = require('./androidHealth');
 
 let driver = null;
+let sessionDeviceId = null; // Track which device the session is for
 
 /**
  * Create a mock Appium driver for testing
@@ -30,7 +32,6 @@ function createMockDriver() {
     clearValue: async () => {},
     setValue: async () => {},
     takeScreenshot: async () => 'bW9ja19lbGVtZW50X3NjcmVlbnNob3Q=',
-    // Appium-style wait methods
     waitForExist: async () => true,
     waitForDisplayed: async () => true,
     waitForEnabled: async () => true,
@@ -43,6 +44,8 @@ function createMockDriver() {
     $: async () => mockElement,
     touchAction: async () => {},
     takeScreenshot: async () => 'bW9ja19zY3JlZW5zaG90X2RhdGE=',
+    getPageSource: async () => '<hierarchy></hierarchy>',
+    getWindowSize: async () => ({ width: 1080, height: 2400 }),
     deleteSession: async () => {},
   };
 }
@@ -57,9 +60,15 @@ function isMockMode() {
 
 /**
  * Get or create an Appium driver connection
+ * Automatically starts Appium server and emulator if not running
+ * 
+ * @param {Object} options
+ * @param {function(string): void} options.onStatus - Callback for status updates
  * @returns {Promise<Object>} WebdriverIO driver instance
  */
-async function getAppiumDriver() {
+async function getAppiumDriver(options = {}) {
+  const { onStatus } = options;
+  
   // Use mock driver in test mode
   if (isMockMode()) {
     if (!driver) {
@@ -68,31 +77,70 @@ async function getAppiumDriver() {
     return driver;
   }
 
+  // Set up status callback if provided
+  if (onStatus) {
+    setStatusCallback(onStatus);
+  }
+
+  // Ensure infrastructure is ready (auto-starts Appium and emulator)
+  const { health, actions } = await ensureReady({ 
+    autoStart: true, 
+    throwOnError: true,
+    onStatus
+  });
+  
+  // Log what we did
+  if (actions.length > 0) {
+    console.error('[AppiumClient] Infrastructure setup:', actions.join(', '));
+  }
+  
+  // If we have an existing session, verify it's still valid
   if (driver) {
-    return driver;
+    // Check if device changed
+    if (sessionDeviceId && sessionDeviceId !== health.deviceId) {
+      console.error('[AppiumClient] Device changed, creating new session');
+      await closeAppiumDriver();
+    } else {
+      // Try to verify session is still active
+      try {
+        await driver.getPageSource();
+        return driver;
+      } catch (e) {
+        console.error('[AppiumClient] Session invalid, creating new session');
+        driver = null;
+        sessionDeviceId = null;
+      }
+    }
   }
 
   const appiumUrl = process.env.APPIUM_URL || 'http://localhost:4723';
 
-  const options = {
+  const options_ = {
     protocol: 'http',
     hostname: new URL(appiumUrl).hostname,
     port: parseInt(new URL(appiumUrl).port) || 4723,
-    path: '/',  // Appium 2.x uses '/' not '/wd/hub'
+    path: '/',
     capabilities: {
       platformName: 'Android',
       'appium:automationName': 'UiAutomator2',
-      'appium:deviceName': process.env.ANDROID_DEVICE || 'Android Emulator',
+      'appium:deviceName': health.deviceId || process.env.ANDROID_DEVICE || 'Android Emulator',
+      'appium:udid': health.deviceId,
       'appium:noReset': true,
       'appium:newCommandTimeout': 300,
     },
     logLevel: 'error',
+    connectionRetryTimeout: 60000,
+    connectionRetryCount: 3,
   };
 
   try {
-    driver = await remote(options);
+    if (onStatus) onStatus('Connecting to Appium...');
+    driver = await remote(options_);
+    sessionDeviceId = health.deviceId;
+    if (onStatus) onStatus('Connected to device');
     return driver;
   } catch (error) {
+    resetHealthCache();
     throw new Error(`Failed to connect to Appium: ${error.message}`);
   }
 }
@@ -102,9 +150,38 @@ async function getAppiumDriver() {
  */
 async function closeAppiumDriver() {
   if (driver) {
-    await driver.deleteSession();
+    try {
+      await driver.deleteSession();
+    } catch (e) {
+      // Ignore errors on cleanup
+    }
     driver = null;
+    sessionDeviceId = null;
   }
 }
 
-module.exports = { getAppiumDriver, closeAppiumDriver, isMockMode };
+/**
+ * Get the current health status of Android infrastructure
+ * @returns {Promise<Object>} Health status
+ */
+async function getHealthStatus() {
+  if (isMockMode()) {
+    return {
+      healthy: true,
+      appiumRunning: true,
+      emulatorRunning: true,
+      appiumVersion: 'mock',
+      deviceId: 'mock-device',
+      deviceType: 'emulator'
+    };
+  }
+  return checkHealth();
+}
+
+module.exports = { 
+  getAppiumDriver, 
+  closeAppiumDriver, 
+  isMockMode,
+  getHealthStatus,
+  resetHealthCache
+};
